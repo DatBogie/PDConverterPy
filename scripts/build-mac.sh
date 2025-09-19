@@ -8,8 +8,8 @@ if [ ! -f "../.venv/bin/activate" ]; then
 fi
 source "../.venv/bin/activate"
 
-# build config
-pyinstaller ../ui.py -n "PDConverter" -w --noconfirm
+# build
+pyinstaller ../main.py -n "PDConverter" -w --noconfirm
 
 rm -rf "./dist/PDConverter"
 
