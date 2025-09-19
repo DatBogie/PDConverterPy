@@ -82,7 +82,7 @@ def writeConfig():
 
 class MainWindow(QMainWindow):
     LEVEL_DATA = LevelData()
-    CLIPBOARD = QClipboard()
+    CLIPBOARD = QClipboard
     def __init__(self):
         super().__init__()
         
