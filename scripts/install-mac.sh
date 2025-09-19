@@ -3,10 +3,8 @@
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
-if [ -f ~/Applications/PyCuts\ Config.app ]; then
-    rm -rf ~/Applications/PyCuts\ Config.app
+if [ -f ~/Applications/PDConverter.app ]; then
+    rm -rf ~/Applications/PDConverter.app
 fi
-mv -f "./PyCuts Config.app" ~/Applications/PyCuts\ Config.app
-echo "Moved 'PyCuts Config.app' to ~/Applications/PyCuts Config.app"
-
-mv -f ./PyCuts /usr/local/bin
+mv -f "./PDConverter.app" ~/Applications/PDConverter.app
+echo "Moved 'PDConverter.app' to ~/Applications/PDConverter.app"

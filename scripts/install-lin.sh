@@ -14,18 +14,8 @@ Type=Application
 Name=PDConverter
 Icon=/home/$USER/.local/share/PDConverter/icon.png
 Exec=/home/$USER/.local/share/PDConverter/PDConverter
-Comment=Global Keyboard Shortcuts Service
+Comment=Convert ADOFAI Levels Into Planets Dance Levels
 Categories=Utility;
 Terminal=false""" > ~/.local/share/applications/PDConverter.desktop
 
-# write .dekstop config
-echo """[Desktop Entry]
-Type=Application
-Name=PDConverter Config
-Icon=/home/$USER/.local/share/PDConverter/icon.png
-Exec=/home/$USER/.local/share/PDConverter/config
-Comment=Graphical Global Keyboard Shortcuts Manager
-Categories=Settings;DesktopSettings;Qt;
-Terminal=false""" > ~/.local/share/applications/PDConverter\ Config.desktop
-
-echo "Installed 'PDConverter' and 'PDConverter Config' .desktop files to ~/.local/share/applications"
+echo "Installed 'PDConverter' .desktop file to ~/.local/share/applications"

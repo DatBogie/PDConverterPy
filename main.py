@@ -1,6 +1,7 @@
 import os, sys, json, rblxopencloud
 from PySide6.QtCore import QDir, Qt, QStandardPaths
-from PySide6.QtWidgets import QMainWindow, QLineEdit, QPushButton, QApplication, QVBoxLayout, QWidget, QComboBox, QFileDialog
+from PySide6.QtGui import QClipboard
+from PySide6.QtWidgets import QMainWindow, QLineEdit, QPushButton, QApplication, QVBoxLayout, QWidget, QComboBox, QFileDialog, QMessageBox
 
 
 _DATA_FOLDER_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.ConfigLocation),"PDConverter")
@@ -29,10 +30,14 @@ class LevelData():
         self.levelNames = []
         self.songName = None
         self.songId = None
-        self.assets = []
-        self.assetIds = []
         self.files = {}
         self.levelJSON = None
+        self.pdData = None
+    
+    def genLevelData(self):
+        self.pdData = self.levelJSON
+        self.pdData["pdconverted"] = 1
+        self.pdData["settings"]["songFilename"] = self.songId
     def request(self):
         global _API_KEY, _USER_ID
         print(_API_KEY,_USER_ID)
@@ -44,9 +49,11 @@ class LevelData():
         usr = rblxopencloud.User(_USER_ID,_API_KEY)
         
         with open(os.path.join(self.levelPath,self.songName),"rb") as song:
-            operation = usr.upload_asset(song,rblxopencloud.AssetType.Audio,self.songName,"Automatically uploaded via Planets Dance Converter.",0)
+            operation = usr.upload_asset(song,rblxopencloud.AssetType.Audio,self.levelJSON["settings"]["songName"],"Automatically uploaded via Planets Dance Converter.",0)
         asset = operation.wait()
         self.songId = asset.id
+        self.genLevelData()
+        return self.pdData
             
     def getLevelContents(self):
         data = QDir(self.levelPath).entryInfoList()
@@ -75,6 +82,7 @@ def writeConfig():
 
 class MainWindow(QMainWindow):
     LEVEL_DATA = LevelData()
+    CLIPBOARD = QClipboard()
     def __init__(self):
         super().__init__()
         
@@ -125,7 +133,16 @@ class MainWindow(QMainWindow):
         _USER_ID = self.userId.text().strip()
         writeConfig()
     def fSubmit(self):
-        self.LEVEL_DATA.request()
+        data = self.LEVEL_DATA.request()
+        self.CLIPBOARD.setText(json.dumps(data))
+        print(data)
+        message = "Uploaded asset(s) successfully!\nMake sure to share the assets with Planets Dance (Asset Link > Permissions > Experiences > Add experiences: 100040746729229):"
+        if data["settings"]["songFilename"] != self.LEVEL_DATA.levelJSON["settings"]["songFilename"]:
+            message+=f"\n\t- {data["settings"]["songName"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{data["settings"]["songFilename"]}/configure"
+        for i,x in enumerate(data["decorations"]):
+            if x.get("decorationImage"):
+                message+=f"\n\t- {data["settings"]["songName"]}: {self.LEVEL_DATA.levelJSON["decorations"][i]["decorationImage"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{x["decorationImage"]}"
+        QMessageBox.information(self,"Success — PDConverter",message,QMessageBox.StandardButton.Ok)
     def fUplFolder(self):
         folderPath = QFileDialog.getExistingDirectory(self,"Choose ADOFAI Level")
         if not folderPath: return
