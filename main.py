@@ -56,7 +56,6 @@ class LevelData():
             except rblxopencloud.exceptions.HttpException:
                 operation = usr.upload_asset(song,rblxopencloud.AssetType.Audio,"Uploaded Song - Planets Dance Converter","Automatically uploaded via Planets Dance Converter.",0)
             except Exception as e:
-                ERROR_MESSAGE.showMessage(str(e))
                 raise e
         
         try:
@@ -150,15 +149,18 @@ class MainWindow(QMainWindow):
         _USER_ID = self.userId.text().strip()
         writeConfig()
     def fSubmit(self):
-        data = self.LEVEL_DATA.request()
-        CLIPBOARD.setText(json.dumps(data,indent=0).strip())
-        message = "Uploaded asset(s) successfully!\nMake sure to share the assets with Planets Dance (Asset Link > Permissions > Experiences > Add experiences: 100040746729229):"
-        if data["settings"]["songFilename"] != self.LEVEL_DATA.levelJSON["settings"]["songFilename"]:
-            message+=f"\n\t- {data["settings"]["song"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{data["settings"]["songFilename"]}/configure"
-        for i,x in enumerate(data["decorations"]):
-            if x.get("decorationImage"):
-                message+=f"\n\t- {data["settings"]["song"]}: {self.LEVEL_DATA.levelJSON["decorations"][i]["decorationImage"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{x["decorationImage"]}"
-        QMessageBox.information(self,"Success — PDConverter",message,QMessageBox.StandardButton.Ok)
+        try:
+            data = self.LEVEL_DATA.request()
+            CLIPBOARD.setText(json.dumps(data,indent=0).strip())
+            message = "Uploaded asset(s) successfully!\nMake sure to share the assets with Planets Dance (Asset Link > Permissions > Experiences > Add experiences: 100040746729229):"
+            if data["settings"]["songFilename"] != self.LEVEL_DATA.levelJSON["settings"]["songFilename"]:
+                message+=f"\n\t- {data["settings"]["song"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{data["settings"]["songFilename"]}/configure"
+            for i,x in enumerate(data["decorations"]):
+                if x.get("decorationImage"):
+                    message+=f"\n\t- {data["settings"]["song"]}: {self.LEVEL_DATA.levelJSON["decorations"][i]["decorationImage"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{x["decorationImage"]}"
+            QMessageBox.information(self,"Success — PDConverter",message,QMessageBox.StandardButton.Ok)
+        except Exception as e:
+            ERROR_MESSAGE.showMessage(str(e),type(e))
     def fUplFolder(self):
         folderPath = QFileDialog.getExistingDirectory(self,"Choose ADOFAI Level")
         if not folderPath: return
