@@ -1,8 +1,10 @@
 import os, sys, json, rblxopencloud
 from PySide6.QtCore import QDir, Qt, QStandardPaths
-from PySide6.QtGui import QClipboard
-from PySide6.QtWidgets import QMainWindow, QLineEdit, QPushButton, QApplication, QVBoxLayout, QWidget, QComboBox, QFileDialog, QMessageBox
+from PySide6.QtGui import QGuiApplication
+from PySide6.QtWidgets import QMainWindow, QLineEdit, QPushButton, QApplication, QVBoxLayout, QWidget, QComboBox, QFileDialog, QMessageBox, QErrorMessage
 
+ERROR_MESSAGE = None
+CLIPBOARD = None
 
 _DATA_FOLDER_PATH = os.path.join(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.ConfigLocation),"PDConverter")
 _DATA_PATH = os.path.join(_DATA_FOLDER_PATH,"data.json")
@@ -49,8 +51,19 @@ class LevelData():
         usr = rblxopencloud.User(_USER_ID,_API_KEY)
         
         with open(os.path.join(self.levelPath,self.songName),"rb") as song:
-            operation = usr.upload_asset(song,rblxopencloud.AssetType.Audio,self.levelJSON["settings"]["songName"],"Automatically uploaded via Planets Dance Converter.",0)
-        asset = operation.wait()
+            try:
+                operation = usr.upload_asset(song,rblxopencloud.AssetType.Audio,self.levelJSON["settings"]["song"],"Automatically uploaded via Planets Dance Converter.",0)
+            except rblxopencloud.exceptions.HttpException:
+                operation = usr.upload_asset(song,rblxopencloud.AssetType.Audio,"Uploaded Song - Planets Dance Converter","Automatically uploaded via Planets Dance Converter.",0)
+            except Exception as e:
+                ERROR_MESSAGE.showMessage(str(e))
+                raise e
+        
+        try:
+            asset = operation.wait(60*4,15)
+        except Exception as e:
+            ERROR_MESSAGE.showMessage(str(e))
+            raise e
         self.songId = asset.id
         self.genLevelData()
         return self.pdData
@@ -82,9 +95,13 @@ def writeConfig():
 
 class MainWindow(QMainWindow):
     LEVEL_DATA = LevelData()
-    CLIPBOARD = QClipboard
     def __init__(self):
         super().__init__()
+        global ERROR_MESSAGE
+
+        self.setWindowTitle("PDConverter")
+
+        ERROR_MESSAGE = QErrorMessage(self)
         
         # Overarching Layout
         centralWidget = QWidget()
@@ -134,14 +151,13 @@ class MainWindow(QMainWindow):
         writeConfig()
     def fSubmit(self):
         data = self.LEVEL_DATA.request()
-        self.CLIPBOARD.setText(json.dumps(data))
-        print(data)
+        CLIPBOARD.setText(json.dumps(data,indent=0).strip())
         message = "Uploaded asset(s) successfully!\nMake sure to share the assets with Planets Dance (Asset Link > Permissions > Experiences > Add experiences: 100040746729229):"
         if data["settings"]["songFilename"] != self.LEVEL_DATA.levelJSON["settings"]["songFilename"]:
-            message+=f"\n\t- {data["settings"]["songName"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{data["settings"]["songFilename"]}/configure"
+            message+=f"\n\t- {data["settings"]["song"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{data["settings"]["songFilename"]}/configure"
         for i,x in enumerate(data["decorations"]):
             if x.get("decorationImage"):
-                message+=f"\n\t- {data["settings"]["songName"]}: {self.LEVEL_DATA.levelJSON["decorations"][i]["decorationImage"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{x["decorationImage"]}"
+                message+=f"\n\t- {data["settings"]["song"]}: {self.LEVEL_DATA.levelJSON["decorations"][i]["decorationImage"]}, Asset Link: https://create.roblox.com/dashboard/creations/store/{x["decorationImage"]}"
         QMessageBox.information(self,"Success — PDConverter",message,QMessageBox.StandardButton.Ok)
     def fUplFolder(self):
         folderPath = QFileDialog.getExistingDirectory(self,"Choose ADOFAI Level")
@@ -155,7 +171,8 @@ class MainWindow(QMainWindow):
                 break
 
 if __name__ == "__main__":
-    app = QApplication([])
+    app = QApplication(sys.argv)
+    CLIPBOARD = QGuiApplication.clipboard()
     win = MainWindow()
     win.show()
     sys.exit(app.exec())
